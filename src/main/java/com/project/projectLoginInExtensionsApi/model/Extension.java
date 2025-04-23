@@ -1,7 +1,11 @@
 package com.project.projectLoginInExtensionsApi.model;
 
+import com.project.projectLoginInExtensionsApi.enums.StatusExtension;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,4 +28,7 @@ public class Extension {
     @OneToOne
     @JoinColumn(name = "logged_user_id", nullable = true)
     private User loggedUser;
+
+    @Enumerated(EnumType.STRING)
+    private StatusExtension status;
 }

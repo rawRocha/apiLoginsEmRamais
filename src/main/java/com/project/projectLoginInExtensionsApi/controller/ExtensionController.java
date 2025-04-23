@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.projectLoginInExtensionsApi.dto.ExtensionLoginRequest;
 import com.project.projectLoginInExtensionsApi.dto.ExtensionRangeDTO;
+import com.project.projectLoginInExtensionsApi.enums.StatusExtension;
 import com.project.projectLoginInExtensionsApi.model.Extension;
 import com.project.projectLoginInExtensionsApi.model.User;
 import com.project.projectLoginInExtensionsApi.repository.ExtensionRepository;
@@ -82,8 +83,19 @@ public class ExtensionController {
     }
 
     @GetMapping("/available")
-    public ResponseEntity<Page<Extension>> getAvailableExtensions(@PageableDefault(size = 8) Pageable pageable) {
-        Page<Extension> availableExtensions = extensionRepository.findByLoggedUserIsNull(pageable);
+    public ResponseEntity<Page<Extension>> getAvailableExtensions(@RequestParam(required = false) Integer start,
+            @RequestParam(required = false) Integer end,
+            @PageableDefault(size = 8) Pageable pageable) {
+
+        Page<Extension> availableExtensions;
+
+        if (start != null && end != null) {
+            availableExtensions = extensionRepository.findByLoggedUserIsNullAndExtensionNumberBetween(start, end,
+                    pageable);
+        } else {
+            availableExtensions = extensionRepository.findByStatus(StatusExtension.DISPONIVEL, pageable);
+        }
+
         return ResponseEntity.ok(availableExtensions);
     }
 
@@ -123,11 +135,13 @@ public class ExtensionController {
         List<Extension> extensoesComUsuario = extensionRepository.findByLoggedUser(user);
         for (Extension e : extensoesComUsuario) {
             e.setLoggedUser(null); // Desloga
+            e.setStatus(StatusExtension.DISPONIVEL);
             extensionRepository.save(e);
         }
 
         // 2. Loga o usuário no novo ramal
         targetExtension.setLoggedUser(user);
+        targetExtension.setStatus(StatusExtension.OCUPADO);
         extensionRepository.save(targetExtension);
 
         Map<String, String> response = new HashMap<>();
@@ -167,6 +181,7 @@ public class ExtensionController {
 
         // 5. Desassociar usuário do ramal
         extension.setLoggedUser(null);
+        extension.setStatus(StatusExtension.DISPONIVEL);
         extensionRepository.save(extension);
 
         Map<String, String> response = new HashMap<>();
@@ -191,6 +206,22 @@ public class ExtensionController {
         }
 
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/configure-range")
+    public ResponseEntity<String> configureRange(@RequestBody ExtensionRangeDTO request) {
+        try {
+            extensionService.configureRange(request.getStart(), request.getEnd());
+            return ResponseEntity.ok("Range configurado com sucesso!");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("reset-range")
+    public ResponseEntity<String> resetRange() {
+        extensionService.resetRangeConfiguration();
+        return ResponseEntity.ok("Range resetado com sucesso!");
     }
 
 }
