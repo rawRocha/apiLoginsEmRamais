@@ -131,7 +131,7 @@ Este projeto é uma API desenvolvida com **Spring Boot** que gerencia logins de 
 
   - **RESETAR range de Ramais DISPONÍVEIS**
 
-  - `POST /extensions/configure-range`
+  - `POST /extensions/reset-range`
 
 ## 📝 Endpoints Disponíveis Users
 
