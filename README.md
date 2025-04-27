@@ -88,7 +88,7 @@ Este projeto é uma API desenvolvida com **Spring Boot** que gerencia logins de 
 
   - **lista dos Ramais disponíveis**
 
-  - `GET /extensions/available`
+  - `GET /extensions/available?start=105&end=110`
 
   - **lista dos Ramais ocupados**
 
@@ -116,6 +116,22 @@ Este projeto é uma API desenvolvida com **Spring Boot** que gerencia logins de 
       "end": 110
     }
     ```
+
+  - **Configurar uma range de Ramais DISPONÍVEIS**
+
+  - `POST /extensions/configure-range`
+  - Corpo:
+
+    ```json
+    {
+      "start": 101,
+      "end": 110
+    }
+    ```
+
+  - **RESETAR range de Ramais DISPONÍVEIS**
+
+  - `POST /extensions/configure-range`
 
 ## 📝 Endpoints Disponíveis Users
 

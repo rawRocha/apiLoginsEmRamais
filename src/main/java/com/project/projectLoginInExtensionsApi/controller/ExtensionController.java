@@ -127,6 +127,10 @@ public class ExtensionController {
 
         Extension targetExtension = optionalExtension.get();
 
+        if (targetExtension.getStatus() == StatusExtension.INVALIDO) {
+            throw new SecurityException("Ramal inativo!");
+        }
+
         if (targetExtension.getLoggedUser() != null) {
             throw new IllegalStateException("Este ramal já está em uso por outro usuário.");
         }

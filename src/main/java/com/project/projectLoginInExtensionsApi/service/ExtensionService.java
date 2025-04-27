@@ -45,16 +45,6 @@ public class ExtensionService {
             throw new IllegalArgumentException("O início do range deve ser menor ou igual ao fim.");
         }
 
-        // Verifica se há ramais OCUPADOS fora do novo range
-        boolean hasOccupiedOutsideRange = extensionRepository.existsByStatusAndExtensionNumberNotBetween(
-                StatusExtension.OCUPADO,
-                startRange,
-                endRange);
-
-        if (hasOccupiedOutsideRange) {
-            throw new IllegalStateException("Existem ramais ocupados fora do range configurado. Libere-os primeiro.");
-        }
-
         // Atualiza os status dos ramais existentes
         List<Extension> allExtensions = extensionRepository.findAll();
 
