@@ -30,10 +30,14 @@ public interface ExtensionRepository extends JpaRepository<Extension, Long> {
 
     Page<Extension> findByLoggedUserIsNullAndExtensionNumberBetween(Integer start, Integer end, Pageable pageable);
 
-    Page<Extension> findByStatus(StatusExtension status, Pageable page);
+    Page<Extension> findByStatusIn(List<StatusExtension> statuses, Pageable pageable);
+
+    Extension findFirstByStatusInOrderByExtensionNumberAsc(List<StatusExtension> status);
+
+    Extension findFirstByStatusInOrderByExtensionNumberDesc(List<StatusExtension> status);
 
     // Novo método para verificar ramais OCUPADOS fora do range
-    @Query("SELECT COUNT(e) > 0 FROM Extension e WHERE e.status = 'OCUPADO' AND (e.extensionNumber < :start OR e.extensionNumber > :end)")
+    @Query("SELECT COUNT(e) > 0 FROM Extension e WHERE e.status = :status AND (e.extensionNumber < :start OR e.extensionNumber > :end)")
     boolean existsByStatusAndExtensionNumberNotBetween(
             @Param("status") StatusExtension status,
             @Param("start") int start,

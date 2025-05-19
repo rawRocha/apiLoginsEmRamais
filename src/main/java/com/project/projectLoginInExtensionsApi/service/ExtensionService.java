@@ -3,19 +3,23 @@ package com.project.projectLoginInExtensionsApi.service;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import com.project.projectLoginInExtensionsApi.enums.StatusExtension;
 import com.project.projectLoginInExtensionsApi.model.Extension;
+import com.project.projectLoginInExtensionsApi.model.ExtensionRange;
+import com.project.projectLoginInExtensionsApi.repository.ExtensionRangeRepository;
 import com.project.projectLoginInExtensionsApi.repository.ExtensionRepository;
 
 @Service
 public class ExtensionService {
     private final ExtensionRepository extensionRepository;
+    private final ExtensionRangeRepository extensionRangeRepository;
 
-    public ExtensionService(ExtensionRepository extensionRepository) {
+    public ExtensionService(ExtensionRepository extensionRepository,
+            ExtensionRangeRepository extensionRangeRepository) {
         this.extensionRepository = extensionRepository;
+        this.extensionRangeRepository = extensionRangeRepository;
     }
 
     public List<Extension> createRangeExtensions(int start, int end) {
@@ -61,6 +65,12 @@ public class ExtensionService {
         }
 
         extensionRepository.saveAll(allExtensions);
+
+        ExtensionRange newRange = new ExtensionRange();
+        newRange.setStart(startRange);
+        newRange.setEnd(endRange);
+
+        extensionRangeRepository.save(newRange);
     }
 
     public void resetRangeConfiguration() {
@@ -73,5 +83,12 @@ public class ExtensionService {
         }
 
         extensionRepository.saveAll(allExtensions);
+    }
+
+    public boolean isExtensionInRange(int extensionNumber, int startRange, int endRange) {
+        if (extensionNumber >= startRange && extensionNumber <= endRange) {
+            return true;
+        }
+        return false;
     }
 }

@@ -23,7 +23,9 @@ import com.project.projectLoginInExtensionsApi.dto.ExtensionLoginRequest;
 import com.project.projectLoginInExtensionsApi.dto.ExtensionRangeDTO;
 import com.project.projectLoginInExtensionsApi.enums.StatusExtension;
 import com.project.projectLoginInExtensionsApi.model.Extension;
+import com.project.projectLoginInExtensionsApi.model.ExtensionRange;
 import com.project.projectLoginInExtensionsApi.model.User;
+import com.project.projectLoginInExtensionsApi.repository.ExtensionRangeRepository;
 import com.project.projectLoginInExtensionsApi.repository.ExtensionRepository;
 import com.project.projectLoginInExtensionsApi.repository.UserRepository;
 import com.project.projectLoginInExtensionsApi.service.ExtensionService;
@@ -41,12 +43,16 @@ public class ExtensionController {
 
     private final ExtensionService extensionService;
 
+    private final ExtensionRangeRepository extensionRangeRepository;
+
     public ExtensionController(UserRepository userRepository, PasswordService passwordService,
-            ExtensionRepository extensionRepository, ExtensionService extensionService) {
+            ExtensionRepository extensionRepository, ExtensionService extensionService,
+            ExtensionRangeRepository extensionRangeRepository) {
         this.userRepository = userRepository;
         this.passwordService = passwordService;
         this.extensionRepository = extensionRepository;
         this.extensionService = extensionService;
+        this.extensionRangeRepository = extensionRangeRepository;
     }
 
     @PostMapping("/create-range")
@@ -93,7 +99,26 @@ public class ExtensionController {
             availableExtensions = extensionRepository.findByLoggedUserIsNullAndExtensionNumberBetween(start, end,
                     pageable);
         } else {
-            availableExtensions = extensionRepository.findByStatus(StatusExtension.DISPONIVEL, pageable);
+            availableExtensions = extensionRepository.findByStatusIn(
+                    List.of(StatusExtension.DISPONIVEL), pageable);
+        }
+
+        return ResponseEntity.ok(availableExtensions);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<Page<Extension>> getAllExtensions(@RequestParam(required = false) Integer start,
+            @RequestParam(required = false) Integer end,
+            @PageableDefault(size = 8) Pageable pageable) {
+
+        Page<Extension> availableExtensions;
+
+        if (start != null && end != null) {
+            availableExtensions = extensionRepository.findByLoggedUserIsNullAndExtensionNumberBetween(start, end,
+                    pageable);
+        } else {
+            availableExtensions = extensionRepository.findByStatusIn(
+                    List.of(StatusExtension.DISPONIVEL, StatusExtension.OCUPADO), pageable);
         }
 
         return ResponseEntity.ok(availableExtensions);
@@ -155,7 +180,8 @@ public class ExtensionController {
     }
 
     @DeleteMapping("/logout")
-    public ResponseEntity<?> logoutUserFromExtension(@RequestBody ExtensionLoginRequest request) {
+    public ResponseEntity<?> logoutUserFromExtension(@RequestBody ExtensionLoginRequest request,
+            @PageableDefault(size = 8) Pageable pageable) {
         // 1. Buscar usuário pelo username
         Optional<User> optionalUser = userRepository.findByUsername(request.getUsername());
         if (optionalUser.isEmpty()) {
@@ -185,11 +211,28 @@ public class ExtensionController {
 
         // 5. Desassociar usuário do ramal
         extension.setLoggedUser(null);
-        extension.setStatus(StatusExtension.DISPONIVEL);
+
+        // 6. Obter último intervalo configurado
+        ExtensionRange range = extensionRangeRepository.findTopByOrderByCreatedAtDesc();
+
+        if (range != null) {
+            int startRange = range.getStart();
+            int endRange = range.getEnd();
+
+            boolean isInRange = extensionService.isExtensionInRange(
+                    extension.getExtensionNumber(), startRange, endRange);
+
+            extension.setStatus(isInRange ? StatusExtension.DISPONIVEL : StatusExtension.INVALIDO);
+        } else {
+            // Se nenhum intervalo configurado, marcar como INVÁLIDO por segurança
+            extension.setStatus(StatusExtension.INVALIDO);
+        }
+
         extensionRepository.save(extension);
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "Logout realizado com sucesso.");
+
         return ResponseEntity.ok(response);
     }
 
@@ -216,6 +259,7 @@ public class ExtensionController {
     public ResponseEntity<String> configureRange(@RequestBody ExtensionRangeDTO request) {
         try {
             extensionService.configureRange(request.getStart(), request.getEnd());
+
             return ResponseEntity.ok("Range configurado com sucesso!");
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
